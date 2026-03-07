@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 author: "May Engelhardt"
 student_id: "B00970301"
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 **BEFORE STARTING:**\
@@ -34,27 +34,25 @@ Report your answer in the code chunks below.
 
 ```{r Task 1}
 #A) 
-plot(iris, col=iris$Species)
 
-iris_subset = subset(iris, 
-                      Species == "setosa" | 
-                        Species == "versicolor" |
-                        Species == "virginica")
-boxplot(iris_subset$Petal.Length ~ iris_subset$Species)
-longest = "virginica"
+max_val = max(iris$Petal.Length)
+longest_row = iris[iris$Petal.Length == max_val, ]
+longest = as.character(longest_row$Species)
 
 #B)
 
 
-varSet = iris[iris$Species == "setosa",]
-varVir = iris[iris$Species == "virginica",]
-varVer = iris[iris$Species == "versicolor",]
+Set = iris[iris$Species == "setosa",]
+Vir = iris[iris$Species == "virginica",]
+Ver = iris[iris$Species == "versicolor",]
 
-var(varSet$Sepal.Width)
-var(varVir$Sepal.Width)
-var(varVer$Sepal.Width)
+var_set = var(Set$Sepal.Width)
+var_vir = var(Vir$Sepal.Width)
+var_ver = var(Ver$Sepal.Width)
 
-variable = "setosa" 
+results <- c("setosa" = var_set, "virginica" = var_vir, "versicolor" = var_ver)
+
+variable <- names(results)[which.max(results)]
 
 ```
 
@@ -68,10 +66,12 @@ A)  Using `base` R, produce a `plot` of all variables excluding the `species` va
 ```{r Task 2}
 #A)
 # YOUR CODE HERE
-png("base_plot.png",width=12,height=12,units="cm",res=300)
-plot(iris[,1:4],col=iris$Species)
-dev.off()
 
+
+
+png("./Figures/base_plot.png",width=12,height=12,units="cm",res=300)
+plot(iris[,1:4],col=iris$Species )
+dev.off()
 
 ```
 :::
@@ -85,9 +85,9 @@ A)  Based on the grammar of graphics, produce a **blank plot (no data plotted)**
 
 ```{r Task 3}
 #A)
-empty_plot = ggplot(
+empty_plot <- ggplot(
                     data=iris,
-                    aes(x = Species, y = Sepal.Width, color = Species)
+                    aes(x = Species, y = Sepal.Width)
                     )
 empty_plot
 ```
@@ -107,8 +107,13 @@ A)  Fix the code below so that it runs and plots successfully and store it as a 
   #theme_minimal()
 
 # A)
-fixed_traits_plot = ggplot(iris, aes(x = Petal.Length, y = Sepal.Length, col = Species, size = iris$Petal.Width))+
- geom_line()+
+fixed_traits_plot = ggplot(iris, aes(x = Petal.Length, 
+                                     y = Sepal.Length, 
+                                     col = Species, 
+                                     size = Petal.Width
+                                     )
+                           )+
+  geom_line()+
   theme_minimal()
 ```
 :::
@@ -129,13 +134,17 @@ A)  Fix and modify the code below and add a discretized `geom` (e.g., `hex`) wit
 #  theme(legend.position = "left")+
 #  scale_x_continuous(limits = seq(0,Inf,2))
 
-fixed_traits_plot_discrete = ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width))+
-        geom_line(alpha = 0.5, aes(as.factor(Petal.Length)))+
-        geom_hex(bins=10)+
-        facet_wrap(~Species)+
-        theme(legend.position = "left")+
-        scale_x_discrete(breaks = seq(0,20,2))+
-        scale_fill_continuous(palette = "viridis")
+fixed_traits_plot_discrete <- ggplot(iris, 
+                                    aes(x = Sepal.Length, 
+                                        y = Sepal.Width))+
+  geom_hex(bins=10)+
+  facet_wrap(~Species)+
+  scale_fill_viridis_c()+
+  scale_x_continuous(breaks = seq(0,10,2))+
+    theme_minimal()+
+  theme(legend.position = "left")
+
+
 
 fixed_traits_plot_discrete  
 
@@ -155,7 +164,19 @@ Name and store it as a plot object as `petal_plot`.
 
 #A)
 # YOUR CODE HERE
-
+petal_plot <- iris %>% 
+  pivot_longer(cols = c(Petal.Length,Petal.Width),
+               names_to = "Measurement_Type",
+               values_to = "Petal_Measurement") %>% 
+  ggplot(aes(x=Measurement_Type, 
+             y=Petal_Measurement, 
+             fill=Species)) +
+           geom_boxplot() +
+           scale_fill_manual(values=c("forestgreen","skyblue","maroon")) +
+           theme_minimal(base_size = 12)
+         
+         
+petal_plot
 ```
 :::
 
@@ -173,13 +194,28 @@ Name and store it as a plot object as `facet_petal_plot`.
 B)  Reproduce this same plot named `facet_petal_plot_reorder` where the facets are reversed by the reordering the `species` factor.
 
 ```{r Task 7}
-# YOUR CODE HERE
 
 #A)
 # YOUR CODE HERE
+facet_petal_plot <- iris %>% 
+  pivot_longer(cols = c(Petal.Length,Petal.Width), names_to = "Measurement_Type",values_to = "Value") %>% 
+  ggplot(aes(x=Measurement_Type, y=Value,col=Species))+
+        geom_point()+
+        geom_jitter()+
+        facet_wrap(~Species, scales = "free_y")
+facet_petal_plot
 
 #B)
 # YOUR CODE HERE
+facet_petal_plot_reorder <- iris %>% 
+   pivot_longer(cols = c(Petal.Length,Petal.Width), names_to = "Measurement_Type",values_to = "Value") %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>% 
+  ggplot(aes(x=Measurement_Type,y=Value,col=Species))+
+  geom_point()+
+  geom_jitter()+
+  facet_wrap(~Species, scales = "free_y")
+
+facet_petal_plot_reorder
 ```
 :::
 
@@ -192,9 +228,13 @@ B)  Create and store a ggplot object named `area_plot` comparing `petal_area` (x
 
 ```{r Task 8}
 #A)
-iris %>% 
-  mutate(petal_area = factor(Species, levels = rev(levels(iris$Species))))
+iris_mod <- iris %>% 
+  mutate(petal_area = Petal.Length*Petal.Width)
 
+area_plot <- ggplot(data = iris_mod,aes(x=petal_area,y=Sepal.Length, col=Species))+
+  geom_point()+
+  theme_minimal()
+area_plot
 # YOUR CODE HERE
 ```
 :::
@@ -206,6 +246,11 @@ C)  Save the previous plot as a `ggplot` object in your Figures folder named `ar
 ```{r}
 #C)
 # YOUR CODE HERE
+
+
+png("./Figures/area_plot.png",width=12,height=12,units="cm",res=300)
+area_plot
+dev.off()
 ```
 
 Be sure before submitting this assignment to clear your and environment and re-run your code to ensure it works then submit this `markdown` file to the relevant Brightspace submission box.

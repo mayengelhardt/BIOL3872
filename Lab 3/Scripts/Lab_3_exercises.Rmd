@@ -8,7 +8,7 @@ output:
   pdf_document: default
   css: styles.css
 editor_options:
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 # Introduction
@@ -117,6 +117,13 @@ A)  What are the exact measurements (Sepal.Length, Sepal.Width, Petal.Length, Pe
 
 ```{r}
 # YOUR CODE HERE
+first = c(head(iris,1))
+first
+
+last = c(tail(iris,1))
+last
+
+
 
 ```
 :::
@@ -142,6 +149,7 @@ What about coloring by data frame categories?
 ```{r}
 # per species
 plot(iris$Sepal.Length, col = iris$Species)
+
 ```
 
 ::: {style="background-color: #44AA99; transparent; padding: 10px; border-radius: 2px;"}
@@ -152,6 +160,18 @@ B)  Which species has (on average) the longest and widest petals? Store it as a 
 
 ```{r}
 # YOUR CODE HERE
+?iris
+
+#irisLargest = as.character(iris$Species[max(iris$Petal.Length && iris$Petal.Width)])
+#irisLargest
+
+plot(iris$Petal.Length,iris$Petal.Width,col = iris$Species);
+
+legend(1,7.5, 
+       legend=c(levels(iris$Species)), 
+       col=c("forestgreen","skyblue","maroon"), 
+       pch=16,
+       cex = 1)
 
 ```
 :::
@@ -380,7 +400,7 @@ ggplot(data = iris, aes(x = Petal.Length, y = Sepal.Length, color = Species))+
   theme_bw(12) +
   labs(x = "Petal length (cm)", y = "Sepal length (cm)")+
   ggtitle("Iris species")+
-  # x axis xustomization with labels specified by sequence
+  # x axis customization with labels specified by sequence
   scale_x_continuous(breaks = seq(0,8,1))
 ```
 
@@ -430,7 +450,13 @@ C)  Create a new `iris` object (e.g., `iris_task4`) where the `Species` factor c
 
 ```{r}
 # YOUR CODE HERE
+data("iris")
+ggplot(data=iris, aes(x=Sepal.Length,y=Sepal.Width,colour = Species)) +
+  geom_point(alpha=0.5)
 
+
+ggplot(data=iris, aes(x=Sepal.Length,y=Sepal.Width,colour = Species)) +
+  geom_point(alpha=0.5)
 ```
 :::
 
@@ -542,7 +568,12 @@ iris %>%
 What about creating a new columns on the road to plotting? The convenience function in `dplyr` in `mutate`.
 
 ```{r}
-# YOUR CODE HERE
+iris %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>% 
+  ggplot(aes(x=Species,y=Petal.Length,col=Species))+
+  geom_boxplot()+
+  geom_jitter()+
+  facet_wrap(~Species)
 ```
 :::
 

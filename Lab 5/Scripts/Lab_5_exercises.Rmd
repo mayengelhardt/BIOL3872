@@ -9,7 +9,27 @@ output:
   css: styles.css
 editor_options:
   chunk_output_type: inline
+  markdown: 
+    wrap: 90
 ---
+
+Notes on midterm:
+
+\- 9 questions
+
+\- can't write exam from home (you need a password they will only give in-class)
+
+\- Lab 2 is most important
+
+\- draft a cheat sheet (handwritten, US letter, one-sided)
+
+\- there's no autofill in the midterm R program
+
+\- 1.5-2 hours - most answers in the exercises
+
+\- can use 'swirl' package to practice
+
+\- there's also a github repo that swirl classes/material is contained in
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
@@ -33,7 +53,8 @@ Labs 1-4 have so far focused on linear statements (credit Diego Ibarra).
 knitr::include_graphics(path.expand("../Figures/flow1.png"))
 ```
 
-There are ways to modify statements that allow controlling the flow of statement execution. Below we explore some flow control methods.
+There are ways to modify statements that allow controlling the flow of statement
+execution. Below we explore some flow control methods.
 
 ### `if` statements
 
@@ -57,7 +78,7 @@ invisible(lapply(packages, library, character.only = TRUE))
 ```{r}
 # Example of IF statement where condition is TRUE
 
-x <- 1e6
+x <- -10
 
 if (x < 0) {
   print("x is greater than or equal to 1e-6")
@@ -74,7 +95,8 @@ knitr::include_graphics(path.expand("../Figures/if_1.png"))
 
 ### `ifelse` statements
 
-Often, we want another condition when the `if` statement is `FALSE`. This is an `ifelse` statement.
+Often, we want another condition when the `if` statement is `FALSE`. This is an `ifelse`
+statement.
 
 ```{r echo=FALSE, fig.align="center", fig.height=10, include=TRUE, out.height="40%", out.width="100%"}
 knitr::include_graphics(path.expand("../Figures/if_2.png"))
@@ -86,13 +108,15 @@ Here is the example already used in **Lab 2**.
 example <- data.frame(x = rnorm(100),
                       y = rnorm(100, sd = 2))
 
+#rnorm generates a sequence of numbers with a random distribution
+
 # Note that this example is vectorized (It checks whole set rather than element-by-element)
 # This can be doubled to two conditions!
 example$iffy <- ifelse(example$y > 1, "Large", "Small")
 
 x <- -10
 
-if (x < 0) {
+if (x > 10) {
   print("x is greater than or equal to 10")
 } else {
   print("x is less than 10")
@@ -102,13 +126,18 @@ if (x < 0) {
 
 We can make these more complex and chain them together in an `ifelse` + `ifelse` + ...
 
-The syntax is: `if` (CONDITION_1 == TRUE) { DO THIS } `else` `if` (CONDITION_2 == TRUE) { DO THIS } `else` { DO THIS }
+The syntax is: `if` (CONDITION_1 == TRUE) { DO THIS } `else` `if` (CONDITION_2 == TRUE) {
+DO THIS } `else` { DO THIS }
 
 ```{r echo=FALSE, fig.align="center", fig.height=10, include=TRUE, out.height="40%", out.width="100%"}
 knitr::include_graphics(path.expand("../Figures/if_3.png"))
+
 ```
 
-Here, if the first condition is `FALSE`, then the flow moves to the second condition. If that condition is `FALSE`, then on it goes, and so on. This type of block starts `if` statement however it may or may not finish with an `else` statement depending on whether you want the last action to be "do nothing".
+Here, if the first condition is `FALSE`, then the flow moves to the second condition. If
+that condition is `FALSE`, then on it goes, and so on. This type of block starts `if`
+statement however it may or may not finish with an `else` statement depending on whether
+you want the last action to be "do nothing".
 
 ### Task 1
 
@@ -116,6 +145,17 @@ Build a multi-chain `ifelse` statement based on the syntax above:
 
 ```{r}
 # YOUR CODE HERE
+n <- 100000
+
+if (n<10) { print("n is a small number")
+  
+} else if (10< n && n<100) {
+  print("n is a medium-sized number")
+} else if(100<n && n<1000) {
+  print("n is a large number")
+} else {
+  print("n is very large.")
+}
 
 ```
 
@@ -124,7 +164,7 @@ Build a multi-chain `ifelse` statement based on the syntax above:
 There are other types of conditional statements that are useful to keep in mind.
 
 ```{r}
-x <- 1e-20
+x <- "2"
 
 if (is.numeric(x)) {
   print("x is numeric")
@@ -138,7 +178,9 @@ if (is.numeric(x)) {
 
 ### for loops
 
-If you want to iterate operations over something (vector, data frame), consider a `for()` loop. These loops are flexible but can be tricky. In general, `for()` loops are helpful to apply sequences of operations across a set of data.
+If you want to iterate operations over something (vector, data frame), consider a `for()`
+loop. These loops are flexible but can be tricky. In general, `for()` loops are helpful to
+apply sequences of operations across a set of data.
 
 ```{r echo=FALSE, fig.align="center", fig.height=10, include=TRUE, out.height="40%", out.width="100%"}
 knitr::include_graphics(path.expand("../Figures/for_loop.png"))
@@ -147,18 +189,22 @@ knitr::include_graphics(path.expand("../Figures/for_loop.png"))
 ```{r}
 example_2 <- rnorm(100, sd = pi)
 
-for (i in example_2) {
+for (i in example_2) { #i is the element in the vector, any variable name will work
   z <- i * pi
 }
+z
 ```
 
 \
-\### Nesting? `for` loops can also be nested such that sequences of operations are embedded within a larger sequence. It's convenient for small scale stuff (e.g., labelling sample IDs for consistency) but will **quickly runs into computational limits with big data sets**.
+\### Nesting? `for` loops can also be nested such that sequences of operations are
+embedded within a larger sequence. It's convenient for small scale stuff (e.g., labelling
+sample IDs for consistency) but will **quickly runs into computational limits with big
+data sets**.
 
 ```{r}
 for (i in 1:10) {
   for (j in letters[1:10]) {
-    print(paste0(i, "_", j))
+    print(paste0(i, "_", j)) #this is just the combined elements, can record sample names in an automated way
   }
 }
 ```
@@ -189,7 +235,9 @@ fish_abundance %>%
 
 ```
 
-What about summarizing average abundance (`num_cpue`) of each fish species across different depth categories? Let's define `deep`, `mesopelagic-ish`, and `shallow` 50, 150, and beyond, respectively.
+What about summarizing average abundance (`num_cpue`) of each fish species across
+different depth categories? Let's define `deep`, `mesopelagic-ish`, and `shallow` 50, 150,
+and beyond, respectively.
 
 ```{r}
 
@@ -208,7 +256,7 @@ Species <- unique(fish_abundance$accepted_name)
 # This is a list! Like a vector but more flexible (can store multiple data types)
 Depths_output <- list()
 
-for(i in Depths) {
+for(i in Depths) { #this is more complicated than they expect us to use, but is a good example of the power of ifelse statements
   # Subset the data frame for depth catgeorgies
     depth_group <- fish_abundance[fish_abundance$depth_category == i, ]
     for(z in Species){
@@ -283,16 +331,40 @@ groundfishes %>%
 
 ### Task 2
 
-Use the the ground fish survey data^1^ frame example from lab 2. Create a `for()` loop that sums the total abundance (`num_cpue`) for each fish species, for each year.
+Use the the ground fish survey data^1^ frame example from lab 2. Create a `for()` loop
+that sums the total abundance (`num_cpue`) for each fish species, for each year.
 
 ```{r}
-# YOUR CODE HERE
+species <- unique(fish_abundance$accepted_name)
+year <- unique(fish_abundance$year)
 
+abundance_totals <- data.frame(
+  species=character(),
+  year=numeric(),
+  total_cpue=numeric()
+)
+for(sp in species) {
+  for (yr in year) {
+    species_data <- fish_abundance[fish_abundance$accepted_name==sp &
+                                     fish_abundance$year == yr,]
+    
+    total <- sum(species_data$num_cpue, na.rm = TRUE)
+    abundance_totals <- rbind(abundance_totals, data.frame(species=sp, year=yr, total_cpue=total))
+  }
+}
+
+
+fish_abundance %>% 
+  group_by(year, accepted_name) %>% 
+  summarize(sum = sum(num_cpue))
 ```
 
 ### Vectorizing operations with \*apply
 
-There are many vectorized options (as opposed to an explicit loop) now in R to accelerate the operations across big data sets. These are incredibly handy and fast! They don't exactly deal with flow control, but show how you can apply your knowledge of flow control to simple statements.
+There are many vectorized options (as opposed to an explicit loop) now in R to accelerate
+the operations across big data sets. These are incredibly handy and fast! They don't
+exactly deal with flow control, but show how you can apply your knowledge of flow control
+to simple statements.
 
 ```{r}
 data("iris")
@@ -317,7 +389,9 @@ do.call(rbind, spec_means)
 
 ### User-defined functions
 
-We have already introduced convenience functions. We can build our own functions too. These allow us to create custom functions that combine flow control statements (`ifelse`) and `for()` loops. They generally take this form:
+We have already introduced convenience functions. We can build our own functions too.
+These allow us to create custom functions that combine flow control statements (`ifelse`)
+and `for()` loops. They generally take this form:
 
 ```{r}
 function_name <- function(arg_1, arg_2, ...) {
@@ -353,7 +427,8 @@ useless_function(x, y)
 
 ```
 
-Let's combine our `if` statements, `for()` loops, and functions to build a more complex but useful function that summarizes our fish abundance data.
+Let's combine our `if` statements, `for()` loops, and functions to build a more complex
+but useful function that summarizes our fish abundance data.
 
 ```{r}
 
@@ -390,6 +465,7 @@ summarize_fish <- function(data,
       stat_value <- sum(sp_data, na.rm = TRUE)
     } else {
       stat_value <- mean(sp_data, na.rm = TRUE) #Default if unrecognized stat type
+      #putting a warning statement for the else here would be useful, this is defaulting to the mean because no other value was specified
 
     }
     
@@ -407,25 +483,31 @@ mean_abundance <- summarize_fish(fish_abundance, stat_type = "mean")
 # Try max abundance 
 max_abundance <- summarize_fish(fish_abundance, stat_type = "max")
 
-
-
 ```
 
 ### Task 3
 
-Create a function called `classify_abundance` that takes a numeric vector of abundance values and returns a character vector classifying each value as "Absent" (0), "Rare" (\< 10), "Common" (10-100), or "Abundant" (\> 100). Use `ifelse` statements inside your function.
+Create a function called `classify_abundance` that takes a numeric vector of abundance
+values and returns a character vector classifying each value as "Absent" (0), "Rare" (\<
+10), "Common" (10-100), or "Abundant" (\> 100). Use `ifelse` statements inside your
+function.
 
 ```{r}
-
-#YOUR CODE HERE
-
+classify_abundance <- function(x) {
+  ifelse(x==0, "Absent",
+    ifelse(x < 10, "Rare",
+    ifelse(x >=10 && x <= 100, "Common",
+    ifelse(x>100, "Abundant"))))
+}
+classify_abundance(27)
 ```
 
 # Data manipulation tools for flow control
 
 ## Pipes reminder `%>%`
 
-The pipe takes `%>%` takes the output of one function and passes it as the first argument to the next function. This is a very powerful way to chain operations together.
+The pipe takes `%>%` takes the output of one function and passes it as the first argument
+to the next function. This is a very powerful way to chain operations together.
 
 ```{r}
 
@@ -442,7 +524,10 @@ fish_abundance %>%
 
 ## Joining data frames
 
-In real-world data analysis, your data is often spread across multiple files or tables. The `dplyr` package provides powerful functions to combine data frames based on common columns. This is essential when you need to merge different data sources together and is among the more useful methods of data manipulation!
+In real-world data analysis, your data is often spread across multiple files or tables.
+The `dplyr` package provides powerful functions to combine data frames based on common
+columns. This is essential when you need to merge different data sources together and is
+among the more useful methods of data manipulation!
 
 ### Types of joins
 
@@ -469,7 +554,7 @@ mean_by_species <- fish_abundance %>%
   group_by(accepted_name) %>%
   summarize(
     mean_cpue = mean(num_cpue, na.rm = TRUE),
-    .groups = "drop"
+    .groups = "drop" #this ungroups it once the calculation has been run
   )
 
 
@@ -484,7 +569,9 @@ depth_by_species <- fish_abundance %>%
 
 ```
 
-Now let's join again by the accepted_name column, species name is a very common column to join by in biological data as you often want to combine collected data with older data, or species traits!
+Now let's join again by the accepted_name column, species name is a very common column to
+join by in biological data as you often want to combine collected data with older data, or
+species traits!
 
 ```{r}
 
@@ -496,7 +583,8 @@ combined <- left_join(mean_by_species, depth_by_species, by = "accepted_name")
 
 ### Joining with different column names
 
-What if the columns you want to join have different names in their respective dataframes? A few options...
+What if the columns you want to join have different names in their respective dataframes?
+A few options...
 
 ```{r}
 
@@ -540,7 +628,8 @@ Using the fish abundance data, create two separate data frames:
 1.  A data frame with average abundance per species per year
 2.  A data frame with average depth per species
 
-Then use a join to combine these two data frames. Which type of join is most appropriate here?
+Then use a join to combine these two data frames. Which type of join is most appropriate
+here?
 
 ```{r}
 # YOUR CODE HERE
@@ -561,11 +650,16 @@ depth_by_species <- fish_abundance %>%
     .groups = "drop"
   )
 
+depth_and_abundance <- left_join(abundance_by_year, depth_by_species)
+
+
 ```
 
 ## Sometimes we can replace loops
 
-There are some clever ways to use `dplyr` data manipulation tricks to do the same thing loops do in an easier way. Let's look at `group_by()` and `summarize()`. We're going to to re-recreate our depth abundance loop from above with `group_by`!
+There are some clever ways to use `dplyr` data manipulation tricks to do the same thing
+loops do in an easier way. Let's look at `group_by()` and `summarize()`. We're going to to
+re-recreate our depth abundance loop from above with `group_by`!
 
 ```{r}
 
@@ -626,4 +720,5 @@ In this lab, we covered:
 
 ## References
 
-1.  Maureaud, A. A. et al. FISHGLOB_data: an integrated dataset of fish biodiversity sampled with scientific bottom-trawl surveys. Sci Data 11, 24 (2024).
+1.  Maureaud, A. A. et al. FISHGLOB_data: an integrated dataset of fish biodiversity
+    sampled with scientific bottom-trawl surveys. Sci Data 11, 24 (2024).

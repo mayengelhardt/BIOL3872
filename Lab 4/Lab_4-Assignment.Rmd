@@ -1,7 +1,7 @@
 ---
 title: "Biol 3872 Lab4-Assignment"
-author: ""
-student_id: ""
+author: "May Engelhardt"
+student_id: "B00970301"
 date: "`r Sys.Date()`"
 editor_options:
   chunk_output_type: inline
@@ -27,18 +27,22 @@ library(patchwork)
 ```
 
 ::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
-
 ## Task 1 {2 points}
 
-A) Using the iris dataset, create a `ggplot` showing only the mean sepal length for each species using the `stat_summary` function and `geom` crossbar. Store in variable `iris_mean.` 
+A)  Using the iris dataset, create a `ggplot` showing only the mean sepal length for each species using the `stat_summary` function and `geom` crossbar. Store in variable `iris_mean.`
 
-B) Now add a `geom` jitter layer to your plot showing how the data is distributed around the mean. Store in variable `iris_data.`
+B)  Now add a `geom` jitter layer to your plot showing how the data is distributed around the mean. Store in variable `iris_data.`
+
 ```{r}
 data("iris")
 #A)
-# YOUR CODE HERE
-
+iris_mean <- ggplot(iris, aes(x = Species, y = Sepal.Length)) +
+  stat_summary(fun = "mean", geom = "crossbar")
+iris_mean
 #B)
+iris_data <- iris_mean +
+  geom_jitter() 
+iris_data
 # YOUR CODE HERE
 ```
 :::
@@ -46,7 +50,6 @@ data("iris")
 \
 
 ::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
-
 ## Task 2 {3 points}
 
 Use the `mtcars` data set to compare fuel efficiency of car models and store as unique `ggplot` objects for each question named `fuel_efficiency_plot_a`, `fuel_efficiency_plot_b`, etc. Think about Tufte's rules 5, 7, 9.
@@ -56,21 +59,34 @@ A)  Transform rownames to a column titled `cartype`, convert this column to a fa
 B)  Add to `fuel_efficiency_plot_a`, a minimal theme with 12 font size, adjust the x labels to 45 degrees and horizontally (right) justify labels.
 
 C)  Add to `fuel_efficiency_plot_b`, another column `geom` which is filled by car weight with a `viridis` color scheme.
+
 ```{r}
 data("mtcars")
 # A)
-# YOUR CODE HERE
+fuel_efficiency_plot_a <- mtcars %>% 
+  rownames_to_column(var = "cartype") %>% 
+    mutate(cartype = fct_reorder(cartype,mpg,.desc = T)) %>% 
+  ggplot(aes(x = cartype, y = mpg)) +
+  geom_col() +
+  theme_dark()
+fuel_efficiency_plot_a
+         
 # B)
-# YOUR CODE HERE
+fuel_efficiency_plot_b <- fuel_efficiency_plot_a +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 11, angle = 45, hjust = 1))
+fuel_efficiency_plot_b
 # C)
-# YOUR CODE HERE
+fuel_efficiency_plot_c <- fuel_efficiency_plot_b +
+  geom_col(aes(fill=wt,)) +
+  scale_fill_viridis_c()
+fuel_efficiency_plot_c
 ```
 :::
 
 \
 
 ::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
-
 ## Task 3 {1 point}
 
 A)  Use `patchwork` to combine a new plot with `fuel_efficiency_plot_c` called `horsepower_plot`. Execute similar data manipulation steps as in **Task 2** to convert rownames to an ordered column as a factor. Pipe this step into a ggplot object with horsepower as the y axis (Think: What would the x axis need to be to combine with `fuel_efficiency_plot_c`?), add a scatterplot `geom` with enlarged points (`size = 3`), a minimal theme with 12 point font, a modified x axis and color palettes identical to `fuel_efficiency_plot_c`.
@@ -79,40 +95,83 @@ Patch this `cars_compared` plot with `fuel_efficiency_plot_c` as a single column
 
 ```{r}
 # A)
-# YOUR CODE HERE
+horsepower_plot <- mtcars %>%
+  rownames_to_column(var = "car_model") %>%
+  mutate(car_model = factor(car_model, levels = car_model[order(mpg)])) %>% # Ordering factor by mpg to match Task 2
+  ggplot(aes(x = car_model, y = hp, color = car_model)) +
+  geom_point(size = 3) +
+  theme_minimal(base_size = 12) +
+  scale_color_discrete(guide = "none") + 
+  labs(x = NULL, y = "Horsepower") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+cars_compared <- (fuel_efficiency_plot_c / horsepower_plot) + 
+  plot_layout(guides = "collect", axes = "collect_x")
+
+cars_compared
 ```
 :::
 
 \
 
 ::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
-
 ## Task 4 {2 points}
 
-A) Load in the CO2 data set used during the lab exercise and render it as a data frame called `co2_df` with columns `co2`, `year`, and `month`. Recall the steps taken during the exercise to properly format the data frame. Create a new column called `season` by three month intervals (Dec, Jan, Feb = Winter / Mar, Apr, May = Spring, etc.). Check out the `ifelse` statements from lab 2.
+A)  Load in the CO2 data set used during the lab exercise and render it as a data frame called `co2_df` with columns `co2`, `year`, and `month`. Recall the steps taken during the exercise to properly format the data frame. Create a new column called `season` by three month intervals (Dec, Jan, Feb = Winter / Mar, Apr, May = Spring, etc.). Check out the `ifelse` statements from lab 2.
 
-B) Order the season variable as a factor (Levels = Winter, Spring, Summer, Autumn). Create a `ggplot` object named `seasonal_co2` plotting years on the x-axis and co2 concentration on the y-axis. Add a point `geom` colored by season with these colors ("#0072B2", "#009E73", "#CC79A7", "#E69F00"), a jitter `geom` to separate points for visualization, and a minimal `theme` with 12 point font.
+B)  Order the season variable as a factor (Levels = Winter, Spring, Summer, Autumn). Create a `ggplot` object named `seasonal_co2` plotting years on the x-axis and co2 concentration on the y-axis. Add a point `geom` colored by season with these colors ("#0072B2", "#009E73", "#CC79A7", "#E69F00"), a jitter `geom` to separate points for visualization, and a minimal `theme` with 12 point font.
 
 ```{r}
 # A)
 data("co2")
-# YOUR CODE HERE
+co2_df <- data.frame(
+  co2 = as.vector(co2),
+  year = as.integer(time(co2)),
+  month = as.integer(cycle(co2))
+)
+
 # B)
-# YOUR CODE HERE
+co2_df$season <- ifelse(co2_df$month %in% c(12, 1, 2), "Winter",
+                 ifelse(co2_df$month %in% c(3, 4, 5), "Spring",
+                 ifelse(co2_df$month %in% c(6, 7, 8), "Summer",
+                        "Autumn")))
+co2_df$season <- factor(co2_df$season, 
+                        levels = c("Winter", "Spring", "Summer", "Autumn"))
+
+seasonal_co2 <- ggplot(co2_df, aes(x = year, y = co2, color = season)) +
+  geom_point() +
+  geom_jitter(width = 0.2, alpha = 0.6) + 
+  scale_color_manual(values = c("#0072B2", "#009E73", "#CC79A7", "#E69F00")) +
+  theme_minimal(base_size = 12) +
+  labs(title = "Mauna Loa CO2 Concentration by Season",
+       x = "Year", 
+       y = "CO2 Concentration (ppm)")
+
+seasonal_co2
 ```
 :::
 
 \
 
 ::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
-
 ## Task 5 {1 point}
 
-A) Using the same `co2_df` as above, order the months by the calender order (not alphabetical) as shown in the exercise. Create a `ggplot` object named `ordered_co2_friendly` comparing yearly co2 concentrations (same as Task 4). Add a point `geom` and a minimal `theme` with 12 point font and a manual color-blind friendly palette `scale` using `diverge_hcl` from `colorspace`. Finally, `facet` this plot by season.
+A)  Using the same `co2_df` as above, order the months by the calender order (not alphabetical) as shown in the exercise. Create a `ggplot` object named `ordered_co2_friendly` comparing yearly co2 concentrations (same as Task 4). Add a point `geom` and a minimal `theme` with 12 point font and a manual color-blind friendly palette `scale` using `diverge_hcl` from `colorspace`. Finally, `facet` this plot by season.
 
 ```{r}
 # A)
-# YOUR CODE HERE
+co2_df$month_name <- factor(month.abb[co2_df$month], levels = month.abb)
+
+ordered_co2_friendly <- ggplot(co2_df, aes(x = year, y = co2, color = month_name)) +
+  geom_point() +
+  scale_color_manual(values = diverge_hcl(12)) +
+  theme_minimal(base_size = 12) +
+  facet_wrap(~season) +
+  labs(title = "Yearly CO2 Concentrations by Season",
+       x = "Year",
+       y = "CO2 Concentration (ppm)",
+       color = "Month")
+
+ordered_co2_friendly
 ```
 :::
 

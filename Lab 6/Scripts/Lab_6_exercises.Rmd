@@ -38,6 +38,8 @@ if (any(installed_packages == FALSE)) {
 # Packages loading
 
 invisible(lapply(packages, library, character.only = TRUE))
+
+
 ```
 
 ## Time and time again.
@@ -145,15 +147,15 @@ A)  Modify the enclosed character strings to a proper (unambiguous) date or date
 ```{r}
 # YOUR CODE HERE
 
-"February-26-2026"
+as.Date("February-26-2026", format = "%B-%d-%Y")
 
-"Jul/29/01"
+as.Date("Jul/29/01", format = "%b/%d/%y")
 
-"Dec-9-95"
+as.Date("Dec-9-95", format = "%b-%d-%y")
 
-"December/4/13 19:11:31"
+as.POSIXct("December/4/13 19:11:31", format = "%B/%D/&y %h:%M:%S")
 
-"December-19-10 9:30:49pm"
+as.POSIXct("December-19-10 9:30:49pm", format = "")
 
 ```
 
@@ -247,7 +249,17 @@ D)  Create an object called `Bedford_Date` by combining the `year`, `month`, and
 
 ```{r}
 # YOUR CODE HERE
+Bedford_ts$Date <- as.Date(Bedford_ts$Date, "%Y-%m-%d")
 
+Bedford_ts$year <- year(Bedford_ts$Date)
+Bedford_ts$month <- month(Bedford_ts$Date)
+Bedford_ts$day <- day(Bedford_ts$Date)
+
+Bedford_ts$Month_name <- month.abb[Bedford_ts$month]
+
+Bedford_Date <- as.Date(make_datetime(year=Bedford_ts$year,month=Bedford_ts$month, day=Bedford_ts$day))
+
+all(Bedford_ts$Date == Bedford_Date)
 ```
 
 ### Visualizing dates and labels

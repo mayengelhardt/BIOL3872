@@ -14,6 +14,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
                       fig.align   = 'center')
+#load("swirl")
 ```
 
 ## Learning Objectives
@@ -61,9 +62,9 @@ Let's plot the troops path, there and back again.
 
 ```{r echo=TRUE}
 troops_p <- ggplot(Minard.troops, aes(long, lat)) +
-  geom_path(aes(size = survivors, color = direction,
+  geom_path(aes(linewidth = survivors, color = direction,
                 group = group))
-
+troops_p
 ```
 
 \
@@ -305,18 +306,17 @@ Clean up the following code to produce a cleaner looking figure.
 ```{r}
 
 ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, color = Species)) +
-  geom_point(size = 4, stroke = 2) +
+  geom_point(size = 1, stroke = 2) +
   theme(
-    panel.grid.major = element_line(color = "black", linewidth = 1.2),
-    panel.grid.minor = element_line(color = "gray40", linewidth = 0.8),
-    panel.background = element_rect(fill = "gray80"),
-    plot.background = element_rect(fill = "gray70"),
-    panel.border = element_rect(color = "black", fill = NA, linewidth = 3),
-    axis.title = element_text(face = "bold", size = 14),
-    axis.text = element_text(face = "bold", size = 12, color = "black"),
-    legend.background = element_rect(fill = "gray60", color = "black", linewidth = 1),
-    legend.title = element_text(face = "bold"),
-    axis.ticks = element_line(linewidth = 1.5, color = "black"),
+    panel.grid.major = element_line(color = "gray80", linewidth = 0.1),
+    panel.grid.minor = element_line(color = "gray80", linewidth = 0.1),
+    panel.background = element_rect(fill = "white"),
+    plot.background = element_rect(fill = "white"),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.2),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 11, color = "black"),
+    legend.background = element_rect(color = "gray30", linewidth = 0.2),
+    axis.ticks = element_line(linewidth = 0.2, color = "black"),
     axis.ticks.length = unit(0.3, "cm")
   ) +
   labs(
@@ -352,6 +352,7 @@ USArrests %>%
   theme_classic() +
   labs(x = "Urban Population (%)",
        y = "Murder Rate (per 100,000)")
+
 ```
 
 ## EXERCISE
@@ -360,8 +361,24 @@ Plot hp vs. mpg in the mtcars2 data and label the dots of four cars of interest 
 
 ```{r}
 # Your code here
+carNames_to_label <- c("Mazda RX4","Mazda RX4 Wag","Datsun 710","Hornet 4 Drive")
 
-
+#square brackets index row names
+#grepl takes a text argument
+mtcars2 %>% 
+  rownames_to_column(var = "carType") %>% 
+  filter(carType %in% carNames_to_label) %>% 
+  ggplot(aes(x = hp, y = mpg)) +
+  geom_point() +
+  geom_text_repel(
+    aes(label = carType),
+    size = 3,
+    fill = "gray40"
+  ) +
+  theme_classic() +
+  labs (x = "Horsepower",
+        y = "Miles Per Gallon")
+#why did this work? how did I set only 4 of them?
 
 ```
 
@@ -605,7 +622,7 @@ Prior to R v. 4.0.0, these were typical coloring defaults:
 example <- rnorm(100)
 plot(example,
      col = oce.colorsJet(10), 
-     cex = 2)
+     cex = 3)
 ```
 
 \
@@ -645,9 +662,11 @@ Use the facet_wrap geom to plot player age versus batting average for every team
 
 ```{r}
 #YOUR CODE HERE
+baseballPlot <- ggplot(DATA, aes(x = player_age, y = batting_average) +
+                         facet_wrap()
+)
 
-
-
+#wrong exercise, skipped it
 ```
 
 ## 10. Understand Narrative

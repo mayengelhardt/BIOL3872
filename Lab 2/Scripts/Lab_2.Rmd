@@ -5,6 +5,9 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+MHE - above is the header, has a bunch of info about the doc
+- 'knit' is a publish fn
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -109,7 +112,11 @@ Create a variable called `bird_wingspan_cm` and assign it a value of 105. Then c
 
 ```{r}
 # Your code here:
+bird_wingspan_cm <- 105 #assigns bird wingspan length in centimetres
 
+bird_wingspan_m <- (bird_wingspan_cm/100) #converts wingspan from centimetres to metres
+bird_wingspan_cm
+bird_wingspan_m
 
 ```
 
@@ -169,6 +176,7 @@ sample_id <- "42"
 class(sample_id)  # "character" - we can't perform operations with the variable sample_id
 
 sample_id + 1  # generates an error because we're trying to add an integer and a character
+# error reads 'non-numeric argument to binary operator'
 ```
 
 ## 3. LOGICAL - TRUE or FALSE (Boolean values)
@@ -258,8 +266,14 @@ as.numeric("hello")  # NA (with a warning)
 
 ```{r}
 # Your code here:
+chickenScientific <- "Gallus gallus domesticus" #the linnean name for a domesticated chicken
+chickenLifespan <- 8 # the upper end of the average lifespan of a Rhode Island Red, which is 5-8 years
+isExtinct <- FALSE
+class (chickenScientific)
+class(chickenLifespan)
+class(isExtinct)
 
-
+as.character(chickenLifespan)
 ```
 
 ------------------------------------------------------------------------
@@ -325,7 +339,12 @@ substr("Accipiter", 1, 3)  # Extract characters: "Acc"
 
 ```{r}
 # Your code here:
-
+sqrt(144)
+round(17.389,1)
+fn = "May"
+ln = "Engelhardt"
+paste(fn, ln)
+nchar("Blacktip reef shark")
 ```
 
 ------------------------------------------------------------------------
@@ -382,6 +401,8 @@ summary(body_mass)    # Quick statistical summary
 SUPER IMPORTANT!!
 
 R uses 1-based indexing (first element is position 1). For Python users - Python uses 0-based, so the first element is position 0.
+
+REMEMBER THAT R USES POS1 NOT POS0!
 
 ```{r}
 body_mass[1]          # First element: 1200
@@ -446,8 +467,15 @@ area <- length_cm * width_cm         # Multiply corresponding elements
 
 ```{r}
 # Your code here:
-
-
+temps = c(18.5, 20.2, 19.8, 22.1, 21.5, 19.0, 17.8)
+mean(temps)
+temps >20
+order(temps)
+max.temps <- max(temps)
+min.temps <- min(temps) #Is this right? how do I re-sort my data?
+summary(temps)
+temp.range <- max.temps-min.temps
+temp.range
 ```
 
 ------------------------------------------------------------------------
@@ -588,7 +616,16 @@ birds[order(-birds$body_mass_g), ]
 
 ```{r}
 # Your code here:
-
+trees = data.frame(
+  treeSpec = c("Oak", "Maple", "Pine", "Birch"),
+  height_m = c(25, 20, 30, 18),
+  is_evergreen = c(FALSE, FALSE, TRUE, FALSE)
+)
+trees$height_ft = (trees$height_m / 3.28)
+tallTrees = trees[trees$height_m > 20,]
+tallTrees
+mean(trees$height_m)
+trees
 
 
 ```
@@ -670,7 +707,12 @@ measurements
 
 ```{r}
 # Your code here:
-
+sum(is.na(measurements$length))
+medianLength = median(measurements$length, na.rm = TRUE)
+medianLength
+measurements_complete = na.omit(measurements)
+measurements
+measurements_complete
 
 
 ```
