@@ -1,0 +1,177 @@
+---
+title: "Biol 3872 Lab8-Assignment"
+output: html_document
+date: "`r Sys.Date()`"
+author: ""
+student_id: ""
+---
+
+\
+**BEFORE STARTING:**\
+1. Include your name (as shown in Brightspace) in the `author` section above as text (e.g., "Arun Oakley-Cogan") and Banner ID ("B00123456") in `student_id`.\
+2. Install and/or load the packages required to run your code chunks.
+
+Assignments will largely be evaluated based on your code chunk answers. If they are incomplete or formatted incorrectly (e.g., code chunks don't run), no marks will be awarded. I recommend experimenting with solving these answers in a separate script/markdown document and reporting your answers with minimal script.
+
+```{r}
+# LOAD NECCESSARY PACKAGES HERE (as you go through questions)
+```
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 1 {3 points}
+
+A)  Load in all the data for this assignment. Start with the `Groundfish_surveys.csv` file as an `sf` object called `trawls` from the lab 7 folder. Set the coordinate reference system (CRS) to `EPSG:4326` (WGS84, unprojected). Load in `ne_countries` at `medium` scale from `rnaturalearth`, call this `coastline`. Lastly, load four `SpatRaster` layers into an object called `marine_stack` from `sdmpredictors`:
+
+-   `BO2_tempmean_bdmax` (Sea water temperature average at seafloor)
+-   `BO2_nitratemean_bdmax` (Nitrate concentration average at seafloor)
+-   `BO21_phosphatemean_bdmax` (Phosphate concentration average at seafloor)
+-   `BO21_dissoxmean_bdmax` (Dissolved oxygen concentration average at seafloor)
+
+B)  Convert the `trawls` dataframe to a `SpatVector` called `trawls_vect`. Use these vector points to `extract` values from all raster layers in `marine_stack` into a `data.frame` called `env`. Bind `env` to `trawls_vect` and convert this to an `sf` object called `trawls_env`.
+
+C)  Use the extent (bounding box) of `trawls_env` to `mask` and `crop` all `marine_stack` layers. Call this `marine_stack_NW`. Checked that this worked by plotting.
+```{r}
+
+# YOUR CODE HERE
+
+# A)
+
+
+# B)
+
+
+# C)
+
+
+```
+:::
+
+\
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 2 {2 points}
+
+A)  Interpolate the `marine_stack_NW` `SpatRaster` layers using bilinear averaging and **increase** the resolution (more cells) by a factor of 5, call this `marine_stack_NW_fine`.
+
+B)  Project `marine_stack_NW_fine` to a Prince Edward Island Stereographic projection (`EPSG:2954`) and call this `marine_stack_NW_fine_proj`.
+```{r}
+# YOUR CODE HERE
+
+# A)
+
+
+# B)
+
+```
+:::
+
+\
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 3 {3 points)
+
+A.  Filter the coastline object for only the Canadian polygon, store in an object called `canada`.
+
+B.  Project `canada` into an object called `canada_proj` using the Prince Edward Island Stereographic projection. Calculate the area in $km^2$ of both `canada` and `canada_proj` and store in two separate objects called `area_spherical` and `area_projected`.
+
+C.  Calculate and store the difference between `area_spherical` and `area_projected` in an object called `coastline_diff`.
+```{r}
+# YOUR CODE HERE
+
+# A)
+
+
+#B)
+
+
+#C)
+
+
+```
+:::
+
+\
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 4 {3 points}
+
+A. Using `tidyterra`, create an object called `marine_stack_NW_O2` which selects the dissolved oxygen layer from `marine_stack_NW`, and `mutate` on a new layer called `O2_ppm` which calculates dissolved oxygen in ppm by multiplying by 0.032.
+
+B. Convert `trawls_env` to a spatial vector (`SpatVector`) called `trawls_env_vect`, filter it to include only longhorn sculpin (*Myoxocephalus octodecemspinosus*), and `mutate` a new column called `log_cpue` which calculates the natural log of catch per unit effort.
+
+C. Create a ggplot called `tidyterra_plot` using `geom_spatvector` and `geom_spatraster` which maps dissolved oxygen in ppm from `marine_stack_NW_O2` using the `mako` viridis palette, overlaid with the points in `trawls_env_vect`. Color the points by temperature using the `magma` viridis palette, size them by `log_cpue`, and set them to 50% transparency. Think about whether each of these elements should be inside or outside of `aes()`. Name the relevant legends 'Oxygen (ppm)', 'Temperature (°C)', and 'log CPUE'.
+```{r}
+# YOUR CODE HERE
+
+# A)
+
+
+# B)
+
+
+# C)
+
+
+```
+:::
+
+\
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 5 {4 points}
+
+A)  Store the bounding box of `trawls` in a variable called `ext_unproj` (this should be a `bbox` class, not a `SpatExtent`).
+
+B)  Project `trawls` to `EPSG:2954` (Prince Edward Island Stereographic / NAD83) and store its `bbox` in a variable called `ext_proj`. Call the projected trawl data `trawls_proj`.
+
+C)  Construct grids for `trawls` and `trawls_proj` with cell sizes of 0.25 degrees and 20 km^2^, respectively. Call these grids `grid_unproj` / `grid_proj`, respectively.
+
+D)  Fix the **explicit** `if`/`else` statement which tests which grid version has a finer representation (more grid cells) of our NW Atlantic region, and **stores** the result to a variable called `answer`. The correct version should effectively concatenate outputs as a `character` string, storing a variable (`answer`) stating which version achieves finer resolution by calculating the difference in the number of grid cells.\
+```{r}
+# YOUR CODE HERE
+
+# A)
+
+
+# B)
+
+
+# C)
+
+
+# D)
+# CODE TO FIX
+#if {ncell(grid_unproj) >> ncell(grid_proj)}{
+#  answer <- paste0("The geographic version has ", as.numeric(ncell(grid_unproj) - #count(grid_proj)), " more grid cells")
+#} else {
+#  paste0("The projected version has ", as.charcter(ncell(grid_proj) - #ncell(grid_unproj)), " more grid cells")
+#}
+
+```
+:::
+
+\
+
+::: {style="background-color: #44AA99; padding: padding: 5px; border-radius: 2px;"}
+
+## Task 6 {2 points}
+
+A)  Change the name of each layer of `marine_stack_NW_fine_proj` to `b_temp`, `b_nitrate`, `b_phosphate`, `b_dissox`, making sure to assign these simpler names to the correct layer.
+
+B)  Write each layer of `marine_stack_NW_fine_proj` to a `GeoTIFF` file. Use `paste0` to concatenate strings in the `filenames` argument of `writeRaster`: These strings should direct outputs to the `Data` folder, name each output file from the `marine_stack_NW_fine_proj` layer name, and end in a `_shelf` suffix (e.g., `layer1_shelf.tif`).
+```{r}
+# YOUR CODE HERE
+# A)
+
+
+# B)
+
+```
+:::
+
+\
