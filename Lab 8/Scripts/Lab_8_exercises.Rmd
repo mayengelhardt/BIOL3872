@@ -1,0 +1,570 @@
+---
+title: 'Lab 8: More complex spatial information'
+subtitle: "March 12, 2026"
+author: "Sophie Tattrie, Reid Steele & Liam MacNeil"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  css: styles.css
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Learning objectives
+
+After completing this lab, you will:
+
+1.  Understand how to customize spatial information `tidyverse`, `sf`, and `terra`
+2.  Understand how to estimate spatial differences
+3.  Be able to interpolate, map, and summarize spatial data
+
+```{r}
+packages <- c("tidyverse", "sf", "terra", "rnaturalearth", "sdmpredictors" , "oce", "gstat", "tidyterra")
+
+
+# Install packages not yet installed
+installed_packages <- packages %in% installed.packages()
+
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+
+invisible(lapply(packages, library, character.only = TRUE))
+```
+
+### Spatial data revisited
+
+Last week we introduced spatial information (rasters and vector data) types, how to modify geographic extents (bounding boxes and extent), project coordinates differently in space, and how to index or filter spatial data. Today, we will extend these topics and introduce new techniques for handling scientific data. We will use similar raster, point, and polygon data to do so.
+
+### Spatial operations (area, distance)
+
+We can perform spatial operations using the `sf` package on vector data (lines, points, polygons). Let's look at some examples.
+
+```{r}
+# Coastline from Natural Earth
+coastline <- ne_countries(scale = "Medium", returnclass = "sf")
+
+# Trawl survey data
+trawls <- read.csv("../../Lab7/Data/Groundfish_surveys.csv") %>% 
+  st_as_sf(coords = c("longitude", "latitude"),
+           crs = st_crs("EPSG:4326"))
+
+
+# Crop coastline to trawl extent
+coastline <- st_crop(coastline, st_bbox(trawls))
+```
+
+#### Area
+
+Spherical geometry, the default of the `sf` package and the `st_area` function lends a more accurate representation across large areas.
+
+Projected geometry (e.g. `EPSG:2954`) allows faster calculations but introduces some distortion because it does not preserve area, though for a regional projection this will be minimal.
+
+Let's compare the two:
+
+Projection :
+
+```{r}
+
+# Transform
+coastline_proj <- st_transform(coastline, "EPSG:2954")
+
+# Calculate area
+st_area(coastline_proj)
+
+# Change units
+units::set_units(st_area(coastline_proj), "km^2")
+```
+
+Spherical geometry :
+
+```{r}
+
+# calculate area of original non projected coastline
+st_area(coastline)
+
+# Change units
+units::set_units(st_area(coastline), "km^2")
+
+
+```
+
+Difference :
+
+```{r}
+# check difference between projected and non-projected
+units::set_units(st_area(coastline_proj) - st_area(coastline), "km^2")
+
+# Percent difference
+(st_area(coastline_proj) - st_area(coastline)) / st_area(coastline) * 100
+```
+
+The difference for polygon 1 is 305 $km^2$, that's quite small when comparing to total area of 62237 $km^2$, so our projection works quite well in this case. Though the spherical calculations remain more accurate and work best for area and distance, not all operations work better this way and some even require projections, good to be familiar with both and their underlying logic.
+
+#### Distance
+
+Let's look at calculating distance between points and polygons using our coastline and trawl data.
+
+```{r}
+
+# calculate distance from each point to coastline
+dist_to_coast <- st_distance(trawls, coastline)
+
+# Find minimum distance from each point to the coast and save in new column
+trawls$dist_to_coast_m <- apply(dist_to_coast, 1, min)
+
+# Visualize
+ggplot() +
+  geom_sf(data = trawls, aes(color = dist_to_coast_m / 1000)) +
+  geom_sf(data = coastline, fill = "grey60") +
+  scale_color_viridis_c(name = "Distance to coast (km)") +
+  theme_minimal()
+```
+
+We can also use distance the calculate the distance between polygons.
+
+```{r}
+
+coastline_dist <- as.numeric(st_distance(coastline[1, ], coastline[2, ])) / 1000
+
+```
+
+What's the distance here and why?
+
+Summary : spherical geometry (`st_area` and `st_distance`) work best for area and distance, but projections are important for many other operations.
+
+### Rasters
+
+We will start again with rasters, they are a common format and extremely useful in the natural sciences. When building e.g., a species distribution model, we're often interested in the associations between a species occurrence (or quantity) and environmental characteristics.
+
+Let's demonstrate how to use point spatial information to extract exact raster values.
+
+```{r}
+# These already exist in your local folders
+sst <- rast(load_layers("BO_sstmean"))
+
+# rename the complicated layer name...
+names(sst) <- "SST"
+
+# Trawl data 
+trawls <- read.csv("../../Lab7/Data/Groundfish_surveys.csv") %>% 
+  st_as_sf(# Notice that this (data) arguement is empty, it is piped in above
+           
+    # this defines the coordiates to create geometry column
+           coords = c("longitude", "latitude"),
+           # Using a default WGS84 projection
+           crs = st_crs("EPSG:4326"))
+
+# This is now a SpatVector (spatial vector)
+trawls_vect <- vect(trawls)
+
+# Extract SST values for trawl position
+sst_trawls <- terra::extract(sst, trawls_vect)
+
+# Combine with original points
+extracted <- cbind(trawls, sst_trawls)
+
+```
+
+### tidyterra
+
+So far, we've mostly only used `base` R functions to manipulate and plot spatial data. Using the `tidyterra` package, we can use `tidyverse` functions on `terra` objects. Take a look at the package page here for some examples of what we can do: <https://dieghernan.github.io/tidyterra/>
+
+Let's try some out:
+
+```{r}
+# Use mutate to add a new layer to a raster
+sst_add = mutate(sst, warm = SST > 20) 
+
+# Now we have a 2-layer raster
+sst_add
+
+# We can also use select to select layers
+sst_warm = sst_add %>%
+  select(warm)
+
+# Back to 1 layer
+sst_warm
+
+# try with values
+sst_warm_vals = filter(sst, SST > 20)
+
+# See the differences
+plot(c(sst, sst_warm, sst_warm_vals))
+
+
+# We can also do a lot of things with vectors
+trawls_deep = filter(trawls_vect, depth > 100)
+nrow(trawls_vect); nrow(trawls_deep)
+
+# Point SpatVectors are treated much like data frames
+group_by(trawls_deep, accepted_name) %>%
+  count()
+group_by(trawls_deep, accepted_name) %>%
+  summarize(mean_cpue = mean(num_cpue), sd_cpue = sd(num_cpue))
+
+```
+
+The main use of `tidyterra` is that we can use it to directly plot rasters and vectors in `ggplot` without having to convert to an `sf` object:
+
+```{r}
+# Plot SST
+ggplot() + geom_spatraster(data = sst, aes(fill = SST)) +
+  scale_fill_viridis_c(option = 'inferno')
+
+# Calculate extent of trawls_vect
+extent = ext(trawls_vect)
+
+# Create a box to crop to
+crop = c(floor(extent[1]), ceiling(extent[2]), floor(extent[3]), ceiling(extent[4]))
+crop
+
+# Crop sst
+sst_cropped = crop(sst, ext(crop))
+sst_cropped
+
+# Change crs to match trawls_vect
+crs(sst_cropped) = crs(trawls_vect)
+
+# Plot
+ggplot() + geom_spatraster(data = sst_cropped, aes(fill = SST)) +
+  scale_fill_viridis_c(option = 'inferno') + # Color scale for sst (fill)
+  geom_spatvector(data = trawls_vect, aes(color = log(num_cpue))) +
+  scale_color_viridis_c(option = 'cividis') # Color scale for spue (color)
+# Note color and fill are different!
+```
+
+#### Spatial gridding: creating your own grid
+
+So far, we've loaded existing raster *.tif* files, and used their default grids. Sometimes we have point data that we want to map onto a grid to display a spatial pattern. To do this, we need to define the spatial extent, the resolution (i.e., scale), the representation (geographic or projected), and a summary operation for multiple points within a single grid cell. Let's use the ground fish survey data to do this.
+
+```{r}
+
+# Coastline shapefile (check the CRS)
+coastline <- ne_countries("Medium") %>% 
+  # We are cropping the coastline to the rectangular extent (bounding box) of trawls
+  st_crop(st_bbox(trawls))
+
+ggplot() +
+  geom_sf(data = trawls)+
+  geom_sf(data = coastline, fill = "grey60")+
+  theme_minimal()
+
+```
+
+What if we wanted to visualize the average spatial pattern in abundance for all species? A raster-like spatial grid is a common way to summarize these points.
+
+```{r}
+?st_make_grid
+
+grid <- st_make_grid(trawls, 
+                     # Grid cell size (in degrees, because of the CRS of points)
+                     cellsize = c(.5, .5))
+
+# Note that this is storing as a single polygon (and showing as a list in environment)
+
+# Build sf using grid and making a new column keeping track of grid IDs (each row is a unique cell)
+grid <- st_sf(geometry = grid, grid_id = seq_along(grid))
+
+ggplot() +
+  geom_sf(data = grid)+
+  geom_sf(data = trawls)+
+  geom_sf(data = coastline, fill = "grey60")+
+  theme_minimal()
+
+```
+
+Now we have a rectangular spatial grid covering the extent (bounding box) of the `trawls`. Let's filter these for only grids where points intersect or within which points are contained.
+
+First, let's return to `joins`, and combine the points with the grid--- this is easy as both are `sf` objects. Then we will have trawl data associated to a grid_id, which we can `summarise` across each unique grid_id.
+
+```{r}
+?st_join
+
+# This acts similar to dplyr joins.
+trawls_grid <- st_join(trawls, grid, 
+                       join = st_within)
+
+str(trawls_grid)
+
+# Now we can summarize total abundance (num_cpue) across each grid cell
+summary_grid <- trawls_grid %>%
+  # This allows values to be treated like an ordinary data frame Otherwise, because it's   # an sf object, the geometry column will be retained and summary calculations will fail
+  st_drop_geometry() %>%
+  # for each grid id
+  group_by(grid_id) %>%
+  summarise(
+    # count total number of observations
+    n_points = n(),
+    # calculate median abundance
+    med_abund = median(num_cpue, na.rm = TRUE)
+  )
+
+str(summary_grid)
+
+# Join this summary information with the original grid (which still has coordinate information)
+grid_summary <- grid %>%
+  # keeps all summary data, matches to original grid and keeps the geometry column (grid   # coordinate information) 
+  left_join(summary_grid, by = "grid_id")
+```
+
+Let's visualize the median abundance of all fish across grid cells containing point observations.
+
+```{r}
+ggplot()+
+  geom_sf(data = grid_summary, aes(fill = med_abund))+
+  geom_sf(data = coastline, fill = "grey70")
+```
+
+## Task 1:
+
+A)  Filter `grid_summary` to remove all cells with NA values for median abundance estimates.
+
+B)  Map this similar to our approach above, apply a nice color palette, and edit to beutify.
+
+```{r}
+
+# A)
+
+
+# B)
+
+
+```
+
+A reminder that this spatial gridding (using `sf` objects) is very similar to a raster, but the grid `polygon` is stored like a data frame and unlike rasters, the grid can be **irregular** (See `cellsize` in `st_make_grid`).
+
+#### Creating hexagonal grids
+
+Squares can be clumsy for spatial grids. They are prone to bias in data coverage, although they are computationally more efficient. Hexagonal grids, by contrast, can more closely follow data data distributions with fewer "edge" effects. See example below^1^.
+
+```{r echo=FALSE, fig.align="center", include=TRUE, out.width="30%"}
+knitr::include_graphics(path.expand("../Figures/Hex_grids.png"))
+```
+
+Let's map hexagonal spatial grids of the average abundance for each the top 5 most abundant species on average in `trawls`.
+
+```{r}
+# Which species have the highest mean abundance in the data set?
+which_top5 <- trawls %>%
+  # We don't need the coordinate information
+  st_drop_geometry() %>% 
+  # For each species
+  group_by(accepted_name) %>%
+  # Filter for those with 10 or more observations
+  filter(n() >= 10) %>%
+  # Calculate mean abundance overall
+  summarize(mean_abund = mean(num_cpue)) %>%
+  # Index all these calculations for the top 5
+  slice_max(order_by = mean_abund, n = 5)
+
+# "Ammodytes dubius" = northern Sand Lance
+# "Melanogrammus aeglefinus" = Haddock
+# "Scomber scombrus" = Atlantic mackerel
+# "Merluccius bilinearis" = Silver hake
+# "Clupea harengus" = herring
+
+# Filter the original trawls for these top 5
+# Summarize mean abundance for each
+trawls_top5 <- trawls %>% 
+  filter(accepted_name %in% unique(which_top5$accepted_name)) 
+# We're keeping coordinate (geometry) information to use as input for grid
+
+
+# This will create grid cells where intersecting with points, removing NAs
+fishnet <- function(geometry, ...){
+  # Creates the overall grid based on sf input
+  grid <- st_make_grid(geometry,...)
+  # Creates the index where points intersect
+  index <- which(lengths(st_intersects(grid, geometry))>0)
+  # Subset the grid cells based on index
+  grid[index]
+}
+
+
+# Calling our `fishnet` function
+trawl_grid <- fishnet(trawls_top5, 
+                      # This creates hexagons
+                      square = F, 
+                      cellsize = c(0.5, 0.5)) %>% 
+  # Similar to st_sf used above, but this converts an existing sf
+  st_as_sf() %>% 
+  # Same as above, keeping track of grid cell IDs
+  mutate(grid_id = row_number()) 
+
+# Let's execute and plot it all together
+trawls_top5 %>% 
+  # Join as sf to attach grid ID
+  st_join(trawl_grid) %>%
+  # For each species, for each grid ID
+  group_by(accepted_name, grid_id) %>% 
+  # Summarize
+  summarize(n_observations = n(),
+            mean_abund = mean(num_cpue),
+            .groups = "drop") %>% 
+  # This drops point geometry so we can attach polygon (grid) geometry
+  st_drop_geometry() %>% 
+  # Attach polygon geometry
+  left_join(trawl_grid, by = "grid_id") %>% 
+  # Enable geometry column to be interpreted spatially
+  st_as_sf() %>% 
+  # plot it
+  ggplot()+
+  geom_sf(aes(fill = log(mean_abund)))+
+  geom_sf(data = coastline, fill = "grey70")+
+  facet_wrap(~accepted_name)+
+  theme_minimal(10)+
+  scale_fill_gradient(low = "white", high = "maroon")+
+  # new plotting step, used to customize spatial axes
+  coord_sf(label_axes = "")
+
+```
+
+## Task 2:
+
+A)  Project (in sf, `transform`) the coordinate reference system in `trawls` to `EPSG:2954`. Call this `trawls_proj`.
+
+B)  Use the `fishnet` function to generate a hexagonal grid called `grid_proj`. Set the grid resolution at 200km^2^ (remember projected coordinate units).
+
+C)  Using `ggplot`, plot this grid together with the `coastline` shapefile, fill grid cells by `grid_id`.
+
+```{r}
+
+# A)
+
+
+# B)
+
+
+```
+
+#### Briefly: spatial interpolation
+
+The smooth, but incomplete gradient pattern shown above brings us to the penultimate topic in spatial data. That is interpolating between observations to model values (like abundance) in the missing gaps, taking into consideration the values of surrounding cells. We have implicitly done this for spatial gridding (creating coarse cells with average values, including beyond the exact location of our point observations).
+
+Owing to their regular grid format and spatially continuous surfaces, rasters are a primary data format for spatial interpolation. A straightforward interpolation method is to simply increase the resolution of your raster (more cells), where the new cells populating the intervening spaces must have values estimated by combining values from surrounding cells. Let's take our global `sst` raster.
+
+```{r}
+# Crop (to bounding box) and mask (assign NAs)
+sst_NW <- crop(sst, ext(trawls))
+# Aggregating for coarser resolution to demonstrate the point
+sst_NW_agg <- aggregate(sst_NW, fact = 5)
+
+# This increases an existing rasters resolution. For continuous data (where each new cell will have more than one neighbouring cell), bilinear interpolation is simple and can be effective.
+
+# * Note what the "fact" arguement can take...
+sst_fine <- disagg(sst_NW_agg, fact = 20, method = "bilinear") 
+
+plot(sst_NW_agg)
+plot(sst_fine)
+```
+
+Spatial interpolation methods can become very complex. We will show another example where we interpolation from points into a (Spat)raster format. For this we will use inverse distance weighting (IDW), where values at an unknown location (e.g., a raster cell) are estimated as a weighted average of known values--- the weights are inversely proportional (further away, less weight) to the distance from a known value.
+
+This schematic illustrates the process^2^.
+
+```{r echo=FALSE, fig.align="center", include=TRUE, out.width="30%"}
+knitr::include_graphics(path.expand("../Figures/IDW-Featured-Image.png"))
+```
+
+```{r}
+# Spatial interpolation by IDW in gstat.
+
+# Create SpatVector (in terra) to convert to raster
+v <- vect(trawls)
+
+# raster template at some defined resolution (e.g., .5 degrees) and at extent of the points
+r <- rast(ext(v), resolution = c(0.5, 0.5))
+
+# grid points to interpolate across
+grid <- as.points(r)
+
+# convert grid to sf object
+grid_sf <- st_as_sf(grid)
+
+# interpolating across extent (bounding box) of grid
+idw <- gstat::idw(num_cpue ~ 1, trawls, grid_sf)
+
+# convert IDW predictions in unknown areas to raster
+  # The x input is a matrix of coordinates and values
+r_interp <- rast(cbind(st_coordinates(idw), 
+        # The interpolation predicted values 
+        idw$var1.pred),
+                 type="xyz",
+        crs = "EPSG:4326")
+  # Because the input arguement (x) is a matrix of values and not a raster already, type must be set
+
+plot(r_interp)
+
+
+# Let's wrap this all in a function to call:
+
+interpolate_idw <- function(points_sf, value, resolution) {
+  
+  # create raster template with extent of vectorized points
+  r <- rast(ext(vect(points_sf)), resolution = resolution)
+  
+  # create grid points from raster and bringing back to sf
+  grid_pts <- as.points(r)
+  grid_sf <- st_as_sf(grid_pts)
+  
+  # Constructing the formula expected by gstat::idw where 1 defines the power for weights indicating a smoother surface as further points can still influence the prediction, a power of 2 would give greater weight to more local points and create a more localized average.
+  formula <- as.formula(paste(value, "~ 1"))
+  
+  # IDW interpolation (check what is within paste for concatenating strings)
+  idw_res <- gstat::idw(formula, points_sf, grid_sf)
+  
+  # convert IDW predictions to raster
+  coords <- st_coordinates(idw_res)
+  r_out <- rast(cbind(coords, idw_res$var1.pred), type = "xyz",
+                # We need to set CRS or it will return NA
+        crs = "EPSG:4326")
+  
+  # Remember that we need a return() to produce out output
+  return(r_out)
+}
+
+# run this function to interpolate from our trawls
+r <- interpolate_idw(
+  points_sf = trawls,
+  value = "num_cpue",
+  resolution = c(0.5, 0.5)
+)
+
+# It has interpolated across the rectangular extent (bounding box) of our points and we can easily mask/crop back to our marine environments.
+plot(r)
+```
+
+#### Saving (Writing) spatial information
+
+When we create new spatial data or modify some batch of data, it is useful to store it for future analysis. We can save (or write) our files across different file formats. Let's do it for our coarse `sst` raster and the coastline surrounding the Scotian Shelf. Notice that we concatenate strings (`paste0`) to build the file name (and file path) for our saved product. This is an extremely useful technique to avoid
+
+```{r}
+# Ensure to use the terra function! Overwrite will prevent duplication.
+terra::writeRaster(sst_NW, paste0("../Data/", names(sst_NW), "_SS", ".tif"), overwrite = TRUE)
+
+# Producing file set for shapefile (check the folder)
+st_write(coastline, "../Data/coastline.shp")
+
+# Checking the available file formats to st_write
+view(st_drivers())
+
+
+# Check that these worked:
+r_check <- rast(paste0("../Data/", names(sst_NW), "_SS", ".tif"))
+
+sf_check <- read_sf("../Data/", layer = "coastline")
+```
+
+### References
+
+1.  Title, P. O., et al. (2022). EcoPhyloMapper: An r package for integrating geographical ranges, phylogeny and morphology. Methods in Ecology and Evolution, 13(9), 1912–1922. <https://doi.org/10.1111/2041-210X.13914>
+
+2.  GIS Geography (2025). Inverse Distance Weighting (IDW) Interpolation, <https://gisgeography.com/inverse-distance-weighting-idw-interpolation/>
